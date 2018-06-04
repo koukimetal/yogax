@@ -3,34 +3,37 @@ const Immutable = require('immutable');
 const R90 = [[0, -1], [1, 0]];
 const FLIP = [[0, 1], [1, 0]];
 
-class Shape {
-    constructor(_seq) {
-        const minY = _seq.map(c => c.get('y')).reduce((a, c) => Math.min(a, c), Number.MAX_VALUE);
-        const minX = _seq.map(c => c.get('x')).reduce((a, c) => Math.min(a, c), Number.MAX_VALUE);
-        this.seq = _seq.map(c => {
-            return Immutable.Map({x: c.get('x') - minX, y: c.get('y') - minY});
+const Coordinate = Immutable.Record({x: 0, y: 0}, 'Coordinate');
+
+class Shape extends Immutable.Record({seq: Immutable.List()}, 'Shape') {
+    static getShape(seq) {
+        const minY = seq.map(c => c.y).reduce((a, c) => Math.min(a, c), Number.MAX_VALUE);
+        const minX = seq.map(c => c.x).reduce((a, c) => Math.min(a, c), Number.MAX_VALUE);
+        seq= seq.map(c => {
+            return new Coordinate({x: c.x - minX,  y: c.y - minY});
         }).sort((a, b) => {
-            if (a.get('x') === b.get('x')) {
-                return a.get('y') - b.get('y');
+            if (a.x === b.x) {
+                return a.y - b.y;
             } else {
-                return a.get('x') - b.get('x');
+                return a.x - b.x;
             }
         });
+        return new Shape({seq});
     }
 
     rotate90() {
-        return new Shape(Shape.applyMatrix(this.seq, R90));
+        return Shape.getShape(Shape.applyMatrix(this.seq, R90));
     }
 
     flip() {
-        return new Shape(Shape.applyMatrix(this.seq, FLIP));
+        return Shape.getShape(Shape.applyMatrix(this.seq, FLIP));
     }
 
     static applyMatrix(seq, mx) {
         return seq.map(c => {
-            const x = c.get('x') * mx[0][0] + c.get('y') * mx[0][1];
-            const y = c.get('x') * mx[1][0] + c.get('y') * mx[1][1];
-            return Immutable.Map({x, y});
+            const x = c.x * mx[0][0] + c.y * mx[0][1];
+            const y = c.x * mx[1][0] + c.y * mx[1][1];
+            return new Coordinate({x, y});
         })
     }
 
@@ -45,16 +48,16 @@ class Shape {
     getCanonical() {
         let patterns = this.get4Rotations();
 
-        patterns = patterns.concat(...this.flip().get4Rotations());
+        patterns = patterns.concat(this.flip().get4Rotations());
         patterns = patterns.sort((p, q) => {
             if (p.seq.size !== q.seq.size) {
                 return p.seq.size - q.seq.size;
             } else {
                 for (let i = 0; i < p.seq.size; i++) {
-                    if (p.seq.get(i).get('x') !== q.seq.get(i).get('x')) {
-                        return p.seq.get(i).get('x') - q.seq.get(i).get('x');
-                    } else if (p.seq.get(i).get('y') !== q.seq.get(i).get('y')) {
-                        return p.seq.get(i).get('y') - q.seq.get(i).get('y');
+                    if (p.seq.get(i).x !== q.seq.get(i).x) {
+                        return p.seq.get(i).x - q.seq.get(i).x;
+                    } else if (p.seq.get(i).y !== q.seq.get(i).y) {
+                        return p.seq.get(i).y - q.seq.get(i).y;
                     }
                 }
             }
@@ -63,16 +66,16 @@ class Shape {
         return patterns.get(0);
     }
 
-    toString() {
-        const maxY = this.seq.map(c => c.get('y')).reduce((a, c) => Math.max(a, c), 0);
-        const maxX = this.seq.map(c => c.get('x')).reduce((a, c) => Math.max(a, c), 0);
+    draw() {
+        const maxY = this.seq.map(c => c.y).reduce((a, c) => Math.max(a, c), 0);
+        const maxX = this.seq.map(c => c.x).reduce((a, c) => Math.max(a, c), 0);
         const draw = new Array(maxY + 1);
         for (let i = 0; i < maxY + 1; i++) {
             draw[i] = new Array(maxX + 1);
         }
 
         this.seq.forEach(co => {
-            draw[co.get('y')][co.get('x')] = true;
+            draw[co.y][co.x] = true;
         });
 
         for (let i = 0; i < maxY + 1; i++) {
@@ -97,16 +100,15 @@ const recursiveGenerator = (seq, shapes, max) => {
         return shapes;
     }
 
-    const canonical = new Shape(seq).getCanonical();
-    seq = canonical.seq;
-    if (shapes.includes(seq)) {
+    const canonical = Shape.getShape(seq).getCanonical();
+    if (shapes.includes(canonical)) {
         return shapes;
     }
-    shapes = shapes.add(seq);
+    shapes = shapes.add(canonical);
 
     seq.forEach(co => {
         for (let i = 0; i < 4; i++) {
-            const nco = Immutable.Map({x: co.get('x') + DX[i], y: co.get('y') + DY[i]});
+            const nco = Coordinate({x: co.x + DX[i], y: co.y + DY[i]});
             if (seq.includes(nco)) {
                 continue;
             }
@@ -117,13 +119,21 @@ const recursiveGenerator = (seq, shapes, max) => {
 };
 
 const generateAllShapes = (maxSize) => {
-    const origin = Immutable.Map({x: 0, y: 0});
+    const origin = new Coordinate({x: 0, y: 0});
     let seq = Immutable.List().push(origin);
     let shapes = Immutable.Set();
     shapes = recursiveGenerator(seq, shapes, maxSize);
-    return shapes.toList()
-        .sort((a, b) => a.size - b.size)
-        .map(seq => new Shape(seq));
+    return shapes.toList();
 };
 
-generateAllShapes(5);
+const debug = () => {
+    const result = generateAllShapes(5);
+    console.log(result.size);
+    result.sort((a, b) => a.seq.size - b.seq.size)
+    .forEach(seq => {
+        console.log();
+        seq.draw();
+    });
+};
+
+debug();
