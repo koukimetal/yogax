@@ -1,11 +1,11 @@
-const Immutable = require('immutable');
+import {Record, Set, List} from 'immutable';
 
 const R90 = [[0, -1], [1, 0]];
 const FLIP = [[0, 1], [1, 0]];
 
-const Coordinate = Immutable.Record({x: 0, y: 0}, 'Coordinate');
+const Coordinate = Record({x: 0, y: 0}, 'Coordinate');
 
-class Shape extends Immutable.Record({seq: Immutable.List()}, 'Shape') {
+class Shape extends Record({seq: List()}, 'Shape') {
     static getShape(seq) {
         const minY = seq.map(c => c.y).reduce((a, c) => Math.min(a, c), Number.MAX_VALUE);
         const minX = seq.map(c => c.x).reduce((a, c) => Math.min(a, c), Number.MAX_VALUE);
@@ -38,7 +38,7 @@ class Shape extends Immutable.Record({seq: Immutable.List()}, 'Shape') {
     }
 
     get4Rotations() {
-        let rs = Immutable.List().push(this);
+        let rs = List().push(this);
         rs = rs.push(rs.get(0).rotate90());
         rs = rs.push(rs.get(1).rotate90());
         rs = rs.push(rs.get(2).rotate90());
@@ -120,8 +120,8 @@ const recursiveGenerator = (seq, shapes, max) => {
 
 const generateAllShapes = (maxSize) => {
     const origin = new Coordinate({x: 0, y: 0});
-    let seq = Immutable.List().push(origin);
-    let shapes = Immutable.Set();
+    let seq = List().push(origin);
+    let shapes = Set();
     shapes = recursiveGenerator(seq, shapes, maxSize);
     return shapes.toList();
 };
@@ -136,4 +136,8 @@ const debug = () => {
     });
 };
 
-debug();
+// debug();
+
+export {
+    generateAllShapes,
+};
