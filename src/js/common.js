@@ -11,8 +11,10 @@ Object.freeze(PartState);
 
 class Part extends Record({state: PartState.NONE, player: -1}, 'Part') {
 }
+const Coordinate = Record({x: 0, y: 0}, 'Coordinate');
 
 export {
     Part,
     PartState,
+    Coordinate,
 }

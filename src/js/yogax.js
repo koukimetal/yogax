@@ -1,7 +1,7 @@
 import React, { Component } from "react";
-import {is, fromJS} from 'immutable';
+import {fromJS, Set} from 'immutable';
 import {generateAllShapes} from "./shape";
-import {Part, PartState} from "./common";
+import {Part, PartState, Coordinate} from "./common";
 
 const VEC_CHOOSE = Object.freeze([-1, 0, 1]);
 const VEC_PUT = Object.freeze([0]);
@@ -56,6 +56,8 @@ class Yogax extends Component {
         this.state = {
             playField,
             partsField,
+            selectedParts: Set(),
+            choiceMouseX: -1, choiceMouseY: -1,
             shapeCursor: 0,
             player: 0,
         };
@@ -150,6 +152,36 @@ class Yogax extends Component {
         return optimized;
     }
 
+    static inBorder(x, y, size) {
+        return 0 <= x && x < size && 0 <= y && y < size;
+    }
+
+    clickChoicePart(x, y) {
+        const field = this.state.partsField.toJS();
+        let selected = Set();
+        if (field[y][x].state !== PartState.NONE) {
+            const start = new Coordinate({x, y});
+            selected = selected.add(start);
+            const queue = [];
+            queue.push(start);
+            while (queue.length > 0) {
+                const s = queue.pop();
+                for (let i = 0; i < DX.length; i++) {
+                    const nc = new Coordinate({x: s.x + DX[i], y: s.y + DY[i]});
+                    if (Yogax.inBorder(nc.x, nc.y, field.length) &&
+                        field[nc.y][nc.x].player === field[y][x].player &&
+                        !selected.includes(nc)
+                    ) {
+                        queue.push(nc);
+                        selected = selected.add(nc);
+                    }
+                }
+            }
+            this.setState({selectedParts: selected});
+        }
+
+    }
+
     render() {
         let playCanvas = [];
         for (let y = 0; y < BOARD_SIZE; y++) {
@@ -174,14 +206,25 @@ class Yogax extends Component {
         for (let y = 0; y < partsField.length; y++) {
             for (let x = 0; x < partsField[y].length; x++) {
                 const strokeDasharray = Yogax.getStrokeDasharray(x, y, partsField, PART_WIDTH/2);
+                let fillColor = 'gray';
+
+                if (this.state.selectedParts.includes(new Coordinate({x, y}))) {
+                    fillColor = 'green';
+                } else if (partsField[y][x].player === 0) {
+                    fillColor = 'blue';
+                } else if (partsField[y][x].player === 1) {
+                    fillColor = 'red';
+                }
+
                 partsCanvas.push(<rect
                     key={y * partsField.length + x}
                     x={x * PART_WIDTH/2}
                     y={y * PART_WIDTH/2}
                     width={PART_WIDTH/2}
                     height={PART_WIDTH/2}
+                    onClick={() => this.clickChoicePart(x, y)}
                     style={{
-                        fill: partsField[y][x].state === PartState.NONE ? 'gray': partsField[y][x].player === 0 ? 'blue' : 'red',
+                        fill: fillColor,
                         stroke: 'white',
                         strokeWidth: 2,
                         strokeDasharray,

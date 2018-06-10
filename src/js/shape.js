@@ -1,9 +1,8 @@
 import {Record, Set, List} from 'immutable';
+import {Coordinate} from './common';
 
 const R90 = [[0, -1], [1, 0]];
 const FLIP = [[0, 1], [1, 0]];
-
-const Coordinate = Record({x: 0, y: 0}, 'Coordinate');
 
 class Shape extends Record({seq: List()}, 'Shape') {
     static getShape(seq) {
