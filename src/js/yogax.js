@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import {fromJS, Set} from 'immutable';
-import {generateAllShapes} from "./shape";
+import {generateAllShapes, Shape} from "./shape";
 import {Part, PartState, Coordinate} from "./common";
 
 const VEC_CHOOSE = Object.freeze([-1, 0, 1]);
@@ -56,6 +56,8 @@ class Yogax extends Component {
         this.state = {
             playField,
             partsField,
+            chosenShape: null,
+            pendingParts: Set(),
             selectedParts: Set(),
             choiceMouseX: -1, choiceMouseY: -1,
             shapeCursor: 0,
@@ -177,23 +179,59 @@ class Yogax extends Component {
                     }
                 }
             }
-            this.setState({selectedParts: selected});
+
+            this.setState({
+                selectedParts: selected,
+                chosenShape: new Shape({seq: selected.toList()}).getCanonical(),
+            });
+        }
+    }
+
+    onMouseBoard(x, y) {
+        const shape = this.state.chosenShape;
+        if (!shape) {
+            return;
         }
 
+        // check drawable
+        let possible = true;
+        for (let i = 0; i < shape.seq.size; i++) {
+            const co = shape.seq.get(i);
+            if (!Yogax.inBorder(x + co.x, y + co.y, BOARD_SIZE)) {
+                possible = false;
+                break;
+            }
+        }
+
+        if (possible) {
+            const pendingParts = shape.seq.map(co => {
+                return new Coordinate({x: co.x + x, y: co.y + y});
+            }).toSet();
+            this.setState({pendingParts});
+        }
     }
 
     render() {
         let playCanvas = [];
+        const pendingParts = this.state.pendingParts;
         for (let y = 0; y < BOARD_SIZE; y++) {
             for (let x = 0; x < BOARD_SIZE; x++) {
+                const co = new Coordinate({x, y});
+
+                let fillColor = 'gray';
+                if (pendingParts.includes(co)) {
+                    fillColor = 'purple';
+                }
+
                 playCanvas.push(<rect
                     key={y * BOARD_SIZE + x}
                     x={x * PART_WIDTH}
                     y={y * PART_WIDTH}
                     width={PART_WIDTH}
                     height={PART_WIDTH}
+                    onMouseOver={() => this.onMouseBoard(x, y)}
                     style={{
-                        fill: 'gray',
+                        fill: fillColor,
                         stroke: 'white',
                         strokeWidth: 2,
                     }}

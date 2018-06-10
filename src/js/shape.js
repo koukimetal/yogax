@@ -139,4 +139,5 @@ const debug = () => {
 
 export {
     generateAllShapes,
+    Shape,
 };
