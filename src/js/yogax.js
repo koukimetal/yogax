@@ -59,7 +59,6 @@ class Yogax extends Component {
             chosenShape: null,
             pendingParts: Set(),
             selectedParts: Set(),
-            choiceMouseX: -1, choiceMouseY: -1,
             shapeCursor: 0,
             player: 0,
         };
@@ -159,32 +158,46 @@ class Yogax extends Component {
     }
 
     clickChoicePart(x, y) {
+        const player = this.state.player;
         const field = this.state.partsField.toJS();
         let selected = Set();
-        if (field[y][x].state !== PartState.NONE) {
-            const start = new Coordinate({x, y});
-            selected = selected.add(start);
-            const queue = [];
-            queue.push(start);
-            while (queue.length > 0) {
-                const s = queue.pop();
-                for (let i = 0; i < DX.length; i++) {
-                    const nc = new Coordinate({x: s.x + DX[i], y: s.y + DY[i]});
-                    if (Yogax.inBorder(nc.x, nc.y, field.length) &&
-                        field[nc.y][nc.x].player === field[y][x].player &&
-                        !selected.includes(nc)
-                    ) {
-                        queue.push(nc);
-                        selected = selected.add(nc);
-                    }
+
+        if (field[y][x].state === PartState.NONE || field[y][x].player !== player) {
+            return;
+        }
+
+        const start = new Coordinate({x, y});
+        selected = selected.add(start);
+        const queue = [];
+        queue.push(start);
+        while (queue.length > 0) {
+            const s = queue.pop();
+            for (let i = 0; i < DX.length; i++) {
+                const nc = new Coordinate({x: s.x + DX[i], y: s.y + DY[i]});
+                if (Yogax.inBorder(nc.x, nc.y, field.length) &&
+                    field[nc.y][nc.x].player === field[y][x].player &&
+                    !selected.includes(nc)
+                ) {
+                    queue.push(nc);
+                    selected = selected.add(nc);
                 }
             }
-
-            this.setState({
-                selectedParts: selected,
-                chosenShape: new Shape({seq: selected.toList()}).getCanonical(),
-            });
         }
+
+        this.setState({
+            selectedParts: selected,
+            chosenShape: new Shape({seq: selected.toList()}).getCanonical(),
+        });
+    }
+
+    static drawable(baseX, baseY, seq, borderSize) {
+        for (let i = 0; i < seq.length; i++) {
+            const co = seq[i];
+            if (!Yogax.inBorder(baseX + co.x, baseY + co.y, borderSize)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     onMouseBoard(x, y) {
@@ -193,23 +206,47 @@ class Yogax extends Component {
             return;
         }
 
-        // check drawable
-        let possible = true;
-        for (let i = 0; i < shape.seq.size; i++) {
-            const co = shape.seq.get(i);
-            if (!Yogax.inBorder(x + co.x, y + co.y, BOARD_SIZE)) {
-                possible = false;
-                break;
-            }
-        }
+        const drawable = Yogax.drawable(x, y, shape.seq.toJS(), BOARD_SIZE);
 
-        if (possible) {
+        if (drawable) {
             const pendingParts = shape.seq.map(co => {
                 return new Coordinate({x: co.x + x, y: co.y + y});
             }).toSet();
             this.setState({pendingParts});
         }
     }
+
+    rotateChosenShape(action) {
+         const shape = this.state.chosenShape;
+         if (!shape) {
+             return;
+         }
+
+         let pendingParts = this.state.pendingParts;
+         const ppx = pendingParts.map(co => co.x).reduce((min, val) => Math.min(min, val));
+         const ppy = pendingParts.map(co => co.y).reduce((min, val) => Math.min(min, val));
+         let chosenShape;
+
+         if (action === 'turnRight') {
+             chosenShape = shape.rotate90();
+         } else if (action === 'turnLeft') {
+             chosenShape = shape.rotate90().rotate90().rotate90();
+         } else if (action === 'flip') {
+             chosenShape = shape.flip();
+         }
+
+         const drawable = Yogax.drawable(ppx, ppy, chosenShape.seq.toJS(), BOARD_SIZE);
+         console.log(ppx, ppy, drawable);
+
+         if (drawable) {
+             pendingParts = chosenShape.seq.map(co => {
+                 return new Coordinate({x: co.x + ppx, y: co.y + ppy});
+             }).toSet();
+             this.setState({pendingParts, chosenShape});
+         } else {
+             this.setState({chosenShape});
+         }
+     }
 
     render() {
         let playCanvas = [];
@@ -282,8 +319,9 @@ class Yogax extends Component {
                 <div>
                     Player: {this.state.player + 1}
                 </div>
-                <button onClick={() => this.handleMoveCursor(1)}>Next</button>
-                <button onClick={() => this.handleMoveCursor(-1)}>Prev</button>
+                <button onClick={() => this.rotateChosenShape('turnRight')}>Rotate Right</button>
+                <button onClick={() => this.rotateChosenShape('turnLeft')}>Rotate Left</button>
+                <button onClick={() => this.rotateChosenShape('flip')}>Flip</button>
             </div>
         );
     }
