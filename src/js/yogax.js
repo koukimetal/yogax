@@ -10,7 +10,7 @@ const DY = [-1, 0, 1, 0];
 
 const BOARD_SIZE = 14;
 const PART_WIDTH = 40;
-const BLOCK_LENGTH = 5;
+const PART_LENGTH = 5;
 
 class Yogax extends Component {
 
@@ -28,12 +28,13 @@ class Yogax extends Component {
     constructor() {
         super();
         const playField = fromJS(Yogax.getField(BOARD_SIZE));
-        const initialShapes = generateAllShapes(BLOCK_LENGTH);
+        const initialShapes = generateAllShapes(PART_LENGTH);
 
         this.shapes = [initialShapes, initialShapes];
 
         let partsField = Yogax.getField(BOARD_SIZE * 2);
 
+        let groupId = 0;
         for (let player = 0; player < 2; player++) {
             const playerShapes = this.shapes[player];
 
@@ -41,10 +42,11 @@ class Yogax extends Component {
             for (let y = 0; y < partsField.length && shapeCursor < playerShapes.size; y++) {
                 for (let x = 0; x < partsField[y].length && shapeCursor < playerShapes.size; x++) {
                     const seq = playerShapes.get(shapeCursor).seq;
-                    if (Yogax.locatable(x, y, VEC_CHOOSE, VEC_CHOOSE, seq.toJS(), partsField)) {
+                    if (Yogax.locatableForChoice(x, y, seq.toJS(), partsField)) {
                         seq.forEach(co => {
-                            partsField[co.y + y][co.x + x] = new Part({state: PartState.OCCUPIED, player});
+                            partsField[co.y + y][co.x + x] = new Part({state: PartState.OCCUPIED, player, groupId});
                         });
+                        groupId++;
                         shapeCursor++;
                     }
                 }
@@ -57,6 +59,7 @@ class Yogax extends Component {
             playField,
             partsField,
             chosenShape: null,
+            chosenGroupId: -1,
             pendingParts: Set(),
             selectedParts: Set(),
             shapeCursor: 0,
@@ -68,11 +71,11 @@ class Yogax extends Component {
         this.setState({shapeCursor: this.state.shapeCursor + move});
     }
 
-    static locatable(baseX, baseY, vecX, vecY, seq, field) {
+    static locatableForChoice(baseX, baseY, seq, field) {
         for (let i = 0; i < seq.length; i++) {
             const co = seq[i];
-            for (let dx of vecX) {
-                for (let dy of vecY) {
+            for (let dx of VEC_CHOOSE) {
+                for (let dy of VEC_CHOOSE) {
                     const cx = co.x + dx + baseX;
                     const cy = co.y + dy + baseY;
 
@@ -99,11 +102,11 @@ class Yogax extends Component {
             const cx = x + DX[i];
             const cy = y + DY[i];
 
-            if (cy < 0 || field.length <= cy || cx < 0 || field[cy].length <= cx) {
+            if (!Yogax.inBorder(cx, cy, field.length)) {
                 continue;
             }
 
-            if (field[cy][cx].player === field[y][x].player) {
+            if (field[cy][cx].groupId === field[y][x].groupId) {
                 connection.push(i);
             }
         }
@@ -113,7 +116,7 @@ class Yogax extends Component {
         const result = [];
         for (let i = 0; i < DX.length;) {
             if ((connection.includes(i) && draw) || (!connection.includes(i) && !draw)) {
-                if (draw) { // if the block is connected to the direction, we put dash line
+                if (draw) { // if the part is connected to the direction, we put dash line
                     result.push(...dashLine);
                 } else {
                     result.push(edgeLength);
@@ -166,6 +169,8 @@ class Yogax extends Component {
             return;
         }
 
+        const chosenGroupId = field[y][x].groupId;
+
         const start = new Coordinate({x, y});
         selected = selected.add(start);
         const queue = [];
@@ -185,6 +190,7 @@ class Yogax extends Component {
         }
 
         this.setState({
+            chosenGroupId,
             selectedParts: selected,
             chosenShape: new Shape({seq: selected.toList()}).getCanonical(),
         });
@@ -236,7 +242,6 @@ class Yogax extends Component {
          }
 
          const drawable = Yogax.drawable(ppx, ppy, chosenShape.seq.toJS(), BOARD_SIZE);
-         console.log(ppx, ppy, drawable);
 
          if (drawable) {
              pendingParts = chosenShape.seq.map(co => {
@@ -246,9 +251,65 @@ class Yogax extends Component {
          } else {
              this.setState({chosenShape});
          }
-     }
+    }
+
+    putPart(x, y) {
+        const groupId = this.state.chosenGroupId;
+        if (groupId < 0) { // not chosen
+            return;
+        }
+
+        // check locatable
+        const player = this.state.player;
+        let pendingParts = this.state.pendingParts;
+        let playFieldJS = this.state.playField.toJS();
+        let locatable = true;
+        pendingParts.forEach(co => {
+            if (playFieldJS[co.y][co.x].state !== PartState.NONE) {
+                locatable = false;
+            }
+            for (let i = 0; i < DX.length; i++) {
+                const nx = co.x + DX[i];
+                const ny = co.y + DY[i];
+                if (!Yogax.inBorder(nx, ny, BOARD_SIZE)) {
+                    continue;
+                }
+                if (playFieldJS[ny][nx].player === player) {
+                    locatable = false;
+                }
+            }
+        });
+
+        // todo center point
+        if (!locatable) {
+            return;
+        }
+
+        pendingParts.forEach(co => {
+            playFieldJS[co.y][co.x] = new Part({state: PartState.OCCUPIED, player, groupId});
+        });
+
+        // Clear from chosen board
+        let partsFieldJS = this.state.partsField.toJS();
+        this.state.selectedParts.forEach(co => {
+            partsFieldJS[co.y][co.x] = new Part();
+        });
+
+        this.setState({
+            player: (player + 1) % 2,
+            playField: fromJS(playFieldJS),
+            pendingParts: Set(),
+            selectedParts: Set(),
+            partsField: fromJS(partsFieldJS),
+            chosenGroupId: -1,
+            chosenShape: null,
+        });
+    }
 
     render() {
+        const playField = this.state.playField;
+        const playFieldJS = playField.toJS();
+
         let playCanvas = [];
         const pendingParts = this.state.pendingParts;
         for (let y = 0; y < BOARD_SIZE; y++) {
@@ -260,6 +321,14 @@ class Yogax extends Component {
                     fillColor = 'purple';
                 }
 
+                const strokeDasharray = Yogax.getStrokeDasharray(x, y, playFieldJS, PART_WIDTH);
+
+                if (playFieldJS[y][x].player === 0) {
+                    fillColor = 'blue';
+                } else if (playFieldJS[y][x].player === 1) {
+                    fillColor = 'red';
+                }
+
                 playCanvas.push(<rect
                     key={y * BOARD_SIZE + x}
                     x={x * PART_WIDTH}
@@ -267,10 +336,12 @@ class Yogax extends Component {
                     width={PART_WIDTH}
                     height={PART_WIDTH}
                     onMouseOver={() => this.onMouseBoard(x, y)}
+                    onClick={() => this.putPart(x, y)}
                     style={{
                         fill: fillColor,
                         stroke: 'white',
                         strokeWidth: 2,
+                        strokeDasharray,
                     }}
                 />);
             }
