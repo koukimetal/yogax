@@ -3,8 +3,12 @@ import {fromJS, Set} from 'immutable';
 import {generateAllShapes, Shape} from "./shape";
 import {Part, PartState, Coordinate} from "./common";
 
+// todo restrict put only for corner touching and put start point
+// todo should have border
+
+const START_POINT = Set().add(new Coordinate({x: 4, y: 4})).add(new Coordinate({x: 9, y: 9}));
+
 const VEC_CHOOSE = Object.freeze([-1, 0, 1]);
-const VEC_PUT = Object.freeze([0]);
 const DX = [0, 1, 0, -1];
 const DY = [-1, 0, 1, 0];
 
@@ -30,18 +34,14 @@ class Yogax extends Component {
         const playField = fromJS(Yogax.getField(BOARD_SIZE));
         const initialShapes = generateAllShapes(PART_LENGTH);
 
-        this.shapes = [initialShapes, initialShapes];
-
         let partsField = Yogax.getField(BOARD_SIZE * 2);
 
         let groupId = 0;
         for (let player = 0; player < 2; player++) {
-            const playerShapes = this.shapes[player];
-
             let shapeCursor = 0;
-            for (let y = 0; y < partsField.length && shapeCursor < playerShapes.size; y++) {
-                for (let x = 0; x < partsField[y].length && shapeCursor < playerShapes.size; x++) {
-                    const seq = playerShapes.get(shapeCursor).seq;
+            for (let y = 0; y < partsField.length && shapeCursor < initialShapes.size; y++) {
+                for (let x = 0; x < partsField[y].length && shapeCursor < initialShapes.size; x++) {
+                    const seq = initialShapes.get(shapeCursor).seq;
                     if (Yogax.locatableForChoice(x, y, seq.toJS(), partsField)) {
                         seq.forEach(co => {
                             partsField[co.y + y][co.x + x] = new Part({state: PartState.OCCUPIED, player, groupId});
@@ -64,6 +64,7 @@ class Yogax extends Component {
             selectedParts: Set(),
             shapeCursor: 0,
             player: 0,
+            turn: 0,
         };
     }
 
@@ -196,10 +197,14 @@ class Yogax extends Component {
         });
     }
 
-    static drawable(baseX, baseY, seq, borderSize) {
+    drawableOnPlayField(baseX, baseY, seq) {
+        const playField = this.state.playField.toJS();
         for (let i = 0; i < seq.length; i++) {
             const co = seq[i];
-            if (!Yogax.inBorder(baseX + co.x, baseY + co.y, borderSize)) {
+            const x = baseX + co.x;
+            const y = baseY + co.y;
+
+            if (!Yogax.inBorder(x, y, playField.length) || playField[y][x].state !== PartState.NONE) {
                 return false;
             }
         }
@@ -212,7 +217,7 @@ class Yogax extends Component {
             return;
         }
 
-        const drawable = Yogax.drawable(x, y, shape.seq.toJS(), BOARD_SIZE);
+        const drawable = this.drawableOnPlayField(x, y, shape.seq.toJS());
 
         if (drawable) {
             const pendingParts = shape.seq.map(co => {
@@ -241,7 +246,7 @@ class Yogax extends Component {
              chosenShape = shape.flip();
          }
 
-         const drawable = Yogax.drawable(ppx, ppy, chosenShape.seq.toJS(), BOARD_SIZE);
+         const drawable = this.drawableOnPlayField(ppx, ppy, chosenShape.seq.toJS());
 
          if (drawable) {
              pendingParts = chosenShape.seq.map(co => {
@@ -280,6 +285,16 @@ class Yogax extends Component {
             }
         });
 
+        const turn = this.state.turn;
+
+        if (turn < 2) {
+            let includeStart = false;
+            pendingParts.forEach(co => {
+                includeStart = includeStart || START_POINT.includes(co);
+            });
+            locatable = locatable && includeStart;
+        }
+
         // todo center point
         if (!locatable) {
             return;
@@ -296,7 +311,8 @@ class Yogax extends Component {
         });
 
         this.setState({
-            player: (player + 1) % 2,
+            turn: turn + 1,
+            player: (turn + 1) % 2,
             playField: fromJS(playFieldJS),
             pendingParts: Set(),
             selectedParts: Set(),
@@ -317,6 +333,11 @@ class Yogax extends Component {
                 const co = new Coordinate({x, y});
 
                 let fillColor = 'gray';
+
+                if (START_POINT.includes(co)) {
+                    fillColor = 'orange';
+                }
+
                 if (pendingParts.includes(co)) {
                     fillColor = 'purple';
                 }
