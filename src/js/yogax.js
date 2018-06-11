@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import {fromJS, Set} from 'immutable';
+import {fromJS, Set, List} from 'immutable';
 import {generateAllShapes, Shape} from "./shape";
 import {Part, PartState, Coordinate} from "./common";
 
@@ -65,6 +65,7 @@ class Yogax extends Component {
             shapeCursor: 0,
             player: 0,
             turn: 0,
+            alreadyPut: List().push(0).push(0)
         };
     }
 
@@ -359,6 +360,11 @@ class Yogax extends Component {
             partsFieldJS[co.y][co.x] = new Part();
         });
 
+        const alreadyPut = this.state.alreadyPut.withMutations(list => {
+            const val = list.get(player);
+            list.set(player, val + pendingParts.size);
+        });
+
         this.setState({
             turn: turn + 1,
             player: (turn + 1) % 2,
@@ -368,6 +374,7 @@ class Yogax extends Component {
             partsField: fromJS(partsFieldJS),
             chosenGroupId: -1,
             chosenShape: null,
+            alreadyPut,
         });
     }
 
@@ -463,6 +470,10 @@ class Yogax extends Component {
                 <button onClick={() => this.rotateChosenShape('turnRight')}>Rotate Right</button>
                 <button onClick={() => this.rotateChosenShape('turnLeft')}>Rotate Left</button>
                 <button onClick={() => this.rotateChosenShape('flip')}>Flip</button>
+                <div>
+                    Score 1: {this.state.alreadyPut.get(0)}, Score 2: {this.state.alreadyPut.get(1)}
+                </div>
+
             </div>
         );
     }
