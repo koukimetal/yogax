@@ -258,7 +258,7 @@ class Yogax extends Component {
          }
     }
 
-    putPart(x, y) {
+    putPart() {
         const groupId = this.state.chosenGroupId;
         if (groupId < 0) { // not chosen
             return;
@@ -269,6 +269,8 @@ class Yogax extends Component {
         let pendingParts = this.state.pendingParts;
         let playFieldJS = this.state.playField.toJS();
         let locatable = true;
+
+        // check not sharing edges
         pendingParts.forEach(co => {
             if (playFieldJS[co.y][co.x].state !== PartState.NONE) {
                 locatable = false;
@@ -288,14 +290,61 @@ class Yogax extends Component {
         const turn = this.state.turn;
 
         if (turn < 2) {
+            // check including a start point
             let includeStart = false;
             pendingParts.forEach(co => {
                 includeStart = includeStart || START_POINT.includes(co);
             });
             locatable = locatable && includeStart;
+        } else {
+            // check sharing at least one corner
+            const requiredSameColorPlaces = [];
+            pendingParts.forEach(co => {
+                const connectedVectors = [];
+                for (let i = 0; i < DX.length; i++) {
+                    const nco = new Coordinate({x: co.x + DX[i], y: co.y + DY[i]});
+                    if (!Yogax.inBorder(nco.x, nco.y, BOARD_SIZE) || !pendingParts.includes(nco)) {
+                        continue;
+                    }
+
+                    connectedVectors.push({x: DX[i], y: DY[i]});
+                }
+
+                if (connectedVectors.length === 0) {
+                    requiredSameColorPlaces.push(new Coordinate({x: co.x - 1, y: co.y - 1}));
+                    requiredSameColorPlaces.push(new Coordinate({x: co.x + 1, y: co.y + 1}));
+                    requiredSameColorPlaces.push(new Coordinate({x: co.x - 1, y: co.y + 1}));
+                    requiredSameColorPlaces.push(new Coordinate({x: co.x + 1, y: co.y - 1}));
+                } else if (connectedVectors.length === 1) {
+                    const cv = connectedVectors[0];
+                    if (cv.x !== 0) {
+                        requiredSameColorPlaces.push(new Coordinate({x: co.x + cv.x * -1, y: co.y + 1}));
+                        requiredSameColorPlaces.push(new Coordinate({x: co.x + cv.x * -1, y: co.y - 1}));
+                    } else {
+                        requiredSameColorPlaces.push(new Coordinate({x: co.x + 1, y: co.y + cv.y * -1}));
+                        requiredSameColorPlaces.push(new Coordinate({x: co.x - 1, y: co.y + cv.y * -1}));
+                    }
+                } else if (connectedVectors.length === 2) {
+                    const cv1 = connectedVectors[0];
+                    const cv2 = connectedVectors[1];
+                    requiredSameColorPlaces.push(new Coordinate({x: co.x - cv1.x - cv2.x, y: co.y - cv1.y - cv2.y}));
+                }
+            });
+
+            let satisfy = false;
+            requiredSameColorPlaces.forEach(co => {
+                if (!Yogax.inBorder(co.x, co.y, BOARD_SIZE)) {
+                    return;
+                }
+
+                if (playFieldJS[co.y][co.x].player === player) {
+                    satisfy = true;
+                }
+            });
+
+            locatable = locatable && satisfy;
         }
 
-        // todo center point
         if (!locatable) {
             return;
         }
@@ -357,7 +406,7 @@ class Yogax extends Component {
                     width={PART_WIDTH}
                     height={PART_WIDTH}
                     onMouseOver={() => this.onMouseBoard(x, y)}
-                    onClick={() => this.putPart(x, y)}
+                    onClick={() => this.putPart()}
                     style={{
                         fill: fillColor,
                         stroke: 'white',
