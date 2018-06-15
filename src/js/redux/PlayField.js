@@ -1,4 +1,4 @@
-import {Coordinate, PART_WIDTH, getStrokeDasharray, BOARD_SIZE, START_POINT, inBorder, PartState, DX, DY} from "./common";
+import {Coordinate, PART_WIDTH, getStrokeDasharray, BOARD_SIZE, START_POINT, inBorder, PartState, DX, DY} from "../common";
 import React from "react";
 import {Set} from 'immutable';
 import {putPart as getPutPartAction, moveCursor as getMoveCursorAction} from "./actions";

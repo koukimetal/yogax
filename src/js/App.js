@@ -1,8 +1,8 @@
 import React from 'react';
 
-import Operation from './Operation';
-import PartsField from './PartsField';
-import PlayField from './PlayField';
+import Operation from './redux/Operation';
+import PartsField from './redux/PartsField';
+import PlayField from './redux/PlayField';
 
 const App = () => (
     <div>

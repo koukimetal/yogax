@@ -1,9 +1,7 @@
-import {Part, PartState, BOARD_SIZE, PART_LENGTH, locatableForChoice} from "./common";
+import {Part, PartState, BOARD_SIZE, PART_LENGTH, locatableForChoice} from "../common";
 import {fromJS, List} from 'immutable';
-import PartsManager from "./PartsManager";
+import partsManager from "./PartsManager";
 import { combineReducers } from 'redux';
-
-const partsManager = new PartsManager(PART_LENGTH, 2);
 
 const getField = (size) => {
     const field = new Array(size);

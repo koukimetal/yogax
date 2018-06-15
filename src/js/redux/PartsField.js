@@ -1,9 +1,11 @@
-import {PART_WIDTH, BOARD_SIZE, getStrokeDasharray} from "./common";
+import {PART_WIDTH, BOARD_SIZE, getStrokeDasharray} from "../common";
 import {selectPart as getSelectPartAction} from "./actions";
 import { connect } from 'react-redux';
 import React from "react";
+import partsManager from "./PartsManager";
 
 const PartsFieldComponent = ({
+    player,
     field,
     selectedGroupId,
     selectPart
@@ -29,7 +31,7 @@ const PartsFieldComponent = ({
                 y={y * PART_WIDTH/2}
                 width={PART_WIDTH/2}
                 height={PART_WIDTH/2}
-                onClick={() => selectPart(fieldJS[y][x].groupId)}
+                onClick={() => selectPart(player, fieldJS[y][x].groupId)}
                 style={{
                     fill: fillColor,
                     stroke: 'white',
@@ -48,14 +50,18 @@ const PartsFieldComponent = ({
 };
 
 const mapStateToProps = state => ({
+    player: state.player,
     field: state.partsField,
     selectedGroupId: state.selectedGroupId,
 });
 
 const mapDispatchToProps = dispatch => ({
-    selectPart: groupId => {
+    selectPart: (player, groupId) => {
         if (groupId >= 0) {
-            dispatch(getSelectPartAction(groupId));
+            const partsPlayer = partsManager.getPlayer(groupId);
+            if (player === partsPlayer) {
+                dispatch(getSelectPartAction(groupId));
+            }
         }
     }
 });

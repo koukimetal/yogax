@@ -1,5 +1,6 @@
 import {generateAllShapes} from "../shape";
 import {fromJS} from 'immutable';
+import {PART_LENGTH} from "../common";
 
 class PartsManager {
     constructor(size, numOfPlayer) {
@@ -31,4 +32,6 @@ class PartsManager {
     }
 }
 
-export default PartsManager;
+const PartsManagerInstance = new PartsManager(PART_LENGTH, 2);
+
+export default PartsManagerInstance;
