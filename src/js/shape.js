@@ -86,7 +86,6 @@ class Shape extends Record({seq: List()}, 'Shape') {
                     line += '.';
                 }
             }
-            console.log(line);
         }
     }
 }
@@ -127,10 +126,8 @@ const generateAllShapes = (maxSize) => {
 
 const debug = () => {
     const result = generateAllShapes(5);
-    console.log(result.size);
     result.sort((a, b) => a.seq.size - b.seq.size)
     .forEach(seq => {
-        console.log();
         seq.draw();
     });
 };

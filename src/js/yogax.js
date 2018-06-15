@@ -3,7 +3,6 @@ import {fromJS, Set, List} from 'immutable';
 import {generateAllShapes, Shape} from "./shape";
 import {Part, PartState, Coordinate} from "./common";
 
-// todo restrict put only for corner touching and put start point
 // todo should have border
 
 const START_POINT = Set().add(new Coordinate({x: 4, y: 4})).add(new Coordinate({x: 9, y: 9}));
