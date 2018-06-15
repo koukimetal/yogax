@@ -81,7 +81,7 @@ const partsField = (state, action) => {
 const selectedShape = (state = null, action) => {
     if (action.type === 'SELECT_PART') {
         return partsManager.getShape(action.groupId);
-    } else if (action.type === 'PUT_PART') {
+    } else if (action.type === 'PUT_PART' || action.type === 'PASS') {
         return null;
     } else if (action.type === 'OPERATE_SHAPE' && state) {
         if (action.operation === 'rotateRight') {
@@ -97,7 +97,7 @@ const selectedShape = (state = null, action) => {
 };
 
 const cursor = (state = null, action) => {
-    if (action.type === 'PUT_PART' || action.type === 'SELECT_PART') {
+    if (action.type === 'PUT_PART' || action.type === 'SELECT_PART' || action.type === 'PASS') {
         return null;
     } else if (action.type === 'MOVE_CURSOR') {
         return action.cursor;
@@ -107,7 +107,7 @@ const cursor = (state = null, action) => {
 };
 
 const selectedGroupId = (state = -2, action) => {
-    if (action.type === 'PUT_PART') {
+    if (action.type === 'PUT_PART' || action.type === 'PASS') {
         return -2;
     } else if (action.type === 'SELECT_PART') {
         return action.groupId;
@@ -116,9 +116,8 @@ const selectedGroupId = (state = -2, action) => {
     return state;
 };
 
-
 const player = (state = 0, action) => {
-    if (action.type === 'PUT_PART') {
+    if (action.type === 'PUT_PART' || action.type === 'PASS') {
         return (state + 1) % 2;
     }
 

@@ -1,11 +1,12 @@
 import React from "react";
-import {operateShape as getOperateAction} from "./actions";
+import {operateShape as getOperateAction, pass as getPassAction} from "./actions";
 import {connect} from "react-redux";
 
 const Operation = ({
    player,
    alreadyPut,
-   operateShape
+   operateShape,
+   pass
 }) => {
     return (
         <div>
@@ -15,6 +16,8 @@ const Operation = ({
             <button onClick={() => operateShape('rotateRight')}>Rotate Right</button>
             <button onClick={() => operateShape('rotateLeft')}>Rotate Left</button>
             <button onClick={() => operateShape('flip')}>Flip right top to left bottom</button>
+            <button onClick={() => pass()}>Pass</button>
+
             <div>
                 Score 1: {alreadyPut.get(0)}, Score 2: {alreadyPut.get(1)}
             </div>
@@ -30,6 +33,9 @@ const mapStateToProps = state => ({
 const mapDispatchToProps = dispatch => ({
     operateShape: (operation) => {
         dispatch(getOperateAction(operation));
+    },
+    pass: () => {
+        dispatch(getPassAction());
     }
 });
 

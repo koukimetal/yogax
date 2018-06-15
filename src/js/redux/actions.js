@@ -21,10 +21,14 @@ const operateShape = (operation) => ({
     operation,
 });
 
+const pass = () => ({
+    type: 'PASS',
+});
 
 export {
     putPart,
     selectPart,
     moveCursor,
     operateShape,
+    pass,
 };
