@@ -69,12 +69,11 @@ const getStrokeDasharray = (x, y, field, edgeLength) => {
     const dashLine = [0].concat(Array(5).fill(edgeLength / 5)).concat([0]);
     const result = [];
     for (let i = 0; i < DX.length;) {
-        if ((connection.includes(i) && draw) || (!connection.includes(i) && !draw)) {
-            if (draw) { // if the part is connected to the direction, we put dash line
-                result.push(...dashLine);
-            } else {
-                result.push(edgeLength);
-            }
+        if (connection.includes(i) && draw) {
+            result.push(...dashLine);
+            i++;
+        } else if (!connection.includes(i) && draw) {
+            result.push(edgeLength);
             i++;
         } else {
             result.push(0);
