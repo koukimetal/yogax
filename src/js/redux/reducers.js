@@ -1,18 +1,7 @@
-import {Part, PartState, BOARD_SIZE, PART_LENGTH, locatableForChoice} from "../common";
+import {Part, PartState, BOARD_SIZE, PART_LENGTH, locatableForChoice, getField} from "../common";
 import {fromJS, List} from 'immutable';
 import partsManager from "./PartsManager";
 import { combineReducers } from 'redux';
-
-const getField = (size) => {
-    const field = new Array(size);
-    for (let i = 0; i < size; i++) {
-        field[i] = new Array(size);
-        for (let j = 0; j < size; j++) {
-            field[i][j] = new Part();
-        }
-    }
-    return field;
-};
 
 const playField = (state, action) => {
     if (typeof state === 'undefined') {

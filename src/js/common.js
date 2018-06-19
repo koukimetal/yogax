@@ -109,6 +109,17 @@ const getStrokeDasharray = (x, y, field, edgeLength) => {
     return optimized;
 };
 
+const getField = (size) => {
+    const field = new Array(size);
+    for (let i = 0; i < size; i++) {
+        field[i] = new Array(size);
+        for (let j = 0; j < size; j++) {
+            field[i][j] = new Part();
+        }
+    }
+    return field;
+};
+
 export {
     Part,
     PartState,
@@ -122,4 +133,5 @@ export {
     locatableForChoice,
     DX,
     DY,
+    getField,
 }

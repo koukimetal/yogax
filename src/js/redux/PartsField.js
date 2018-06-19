@@ -66,6 +66,10 @@ const mapDispatchToProps = dispatch => ({
     }
 });
 
+export {
+    PartsFieldComponent,
+};
+
 export default connect(
     mapStateToProps,
     mapDispatchToProps

@@ -1,0 +1,69 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`test PartsField Component 1`] = `
+<svg
+  height={560}
+  width={560}
+>
+  <rect
+    height={20}
+    onClick={[Function]}
+    style={
+      Object {
+        "fill": "gray",
+        "stroke": "white",
+        "strokeDasharray": Array [],
+        "strokeWidth": 2,
+      }
+    }
+    width={20}
+    x={0}
+    y={0}
+  />
+  <rect
+    height={20}
+    onClick={[Function]}
+    style={
+      Object {
+        "fill": "gray",
+        "stroke": "white",
+        "strokeDasharray": Array [],
+        "strokeWidth": 2,
+      }
+    }
+    width={20}
+    x={20}
+    y={0}
+  />
+  <rect
+    height={20}
+    onClick={[Function]}
+    style={
+      Object {
+        "fill": "gray",
+        "stroke": "white",
+        "strokeDasharray": Array [],
+        "strokeWidth": 2,
+      }
+    }
+    width={20}
+    x={0}
+    y={20}
+  />
+  <rect
+    height={20}
+    onClick={[Function]}
+    style={
+      Object {
+        "fill": "gray",
+        "stroke": "white",
+        "strokeDasharray": Array [],
+        "strokeWidth": 2,
+      }
+    }
+    width={20}
+    x={20}
+    y={20}
+  />
+</svg>
+`;
